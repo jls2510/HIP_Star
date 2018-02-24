@@ -56,6 +56,8 @@ public class HeavenlyData
         // do some heavenly stuff
         Statement statement = null;
         ResultSet resultSet = null;
+        
+        // hi Jim
 
         String sql =
             "SELECT h.HIP, n.Name, s.IAU_con, c.Constellation, h.Vmag, h.SpType "
