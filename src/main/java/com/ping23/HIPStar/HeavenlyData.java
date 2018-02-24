@@ -62,7 +62,7 @@ public class HeavenlyData
                 + "FROM iau_star_names AS n "
                 + "INNER JOIN hip_main AS h ON n.HIP = h.HIP "
                 + "INNER JOIN star_con AS s ON h.HIP = s.HIP "
-                + "INNER JOIN Constellation AS c ON s.IAU_con = c.IAU_abbreviation "
+                + "INNER JOIN constellation AS c ON s.IAU_con = c.IAU_abbreviation "
                 + "ORDER BY s.IAU_con, n.Name;\r\n";
 
         try
