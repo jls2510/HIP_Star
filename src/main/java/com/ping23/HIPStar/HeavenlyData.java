@@ -3,23 +3,146 @@ package main.java.com.ping23.HIPStar;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
 
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 
+import main.java.com.ping23.HIPStar.model.Constellation;
 import main.java.com.ping23.util.DataUtilities;
 
 public class HeavenlyData
 {
 
+    /**
+     * DataSource instance, for getting Connections to the database
+     */
+    private static DataSource datasource;
+
+    /*
+     * static initializer for datasource
+     */
+    static
+    {
+        try
+        {
+            // Look up the JNDI data source only once at init time
+            // this stuff is defined in META-INF/context.xml
+            Context envCtx = (Context) new InitialContext();
+            datasource =
+                (DataSource) envCtx.lookup("java:comp/env/jdbc/heavens");
+        }
+        catch (NamingException e)
+        {
+            // e.printStackTrace();
+            System.out.println(
+                "Couldn't create the datasource for the Web App; " 
+                + "If you are running as a standalone then you can safely ignore this.");
+        }
+    }
+
     private HeavenlyData()
     {
     }
 
+    public static List<Constellation> getConstellations()
+    {
+        List<Constellation> constellations = new ArrayList<Constellation>();
+        
+        String query =
+            "SELECT SNo, IAU_abbreviation, Constellation FROM constellation;";
+
+        ResultSet resultSet = null;
+        try
+        {
+            resultSet = getResultSet(query);
+            resultSet.beforeFirst();
+            
+            while (resultSet.next())
+            {
+                int anID = Integer.parseInt(resultSet.getString("SNo"));
+                String IAU_abbreviation = resultSet.getString("IAU_abbreviation");
+                String aName = resultSet.getString("Constellation");
+                Constellation newConstellation = new Constellation(anID, IAU_abbreviation, aName);
+                
+                constellations.add(newConstellation);
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+        try
+        {
+            resultSet.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+        return constellations;
+    }
+    
+    /**
+     * get the full constellation name for the given abbreviation
+     * @param iau_con the constellation name abbreviation
+     * @return
+     */
+    public static String getConstellationFullname(String iau_con)
+    {
+        String constellationFullname = null;
+
+        String query =
+            "SELECT constellation.Constellation FROM constellation WHERE constellation.IAU_abbreviation = '"
+                + iau_con + "';";
+
+        ResultSet resultSet = null;
+        try
+        {
+            resultSet = getResultSet(query);
+            resultSet.beforeFirst();
+            while (resultSet.next())
+            {
+                constellationFullname = resultSet.getString("Constellation");
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+        try
+        {
+            resultSet.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+        return constellationFullname;
+    } // getConstellationFullname()
+
     public static void doSomething()
     {
         String query = getQuery("MessierObjects");
-
-        ResultSet resultSet = getResultSet(query);
+        ResultSet resultSet = null;
+        try
+        {
+            resultSet = getResultSet(query);
+        }
+        catch (SQLException e)
+        {
+            e.printStackTrace();
+        }
 
         outputQueryData(resultSet);
 
@@ -52,7 +175,7 @@ public class HeavenlyData
         {
             query =
                 "SELECT m.M, c.Constellation FROM messier_catalog AS m JOIN constellation AS c ON m.Con = c.IAU_abbreviation "
-                + "ORDER BY m.Con";
+                    + "ORDER BY m.Con";
         }
         else
         {
@@ -96,9 +219,10 @@ public class HeavenlyData
 
     } // outputQueryData()
 
-    public static ResultSet getResultSet(String query)
+    public static ResultSet getResultSet(String query) throws SQLException
     {
-        Connection connection = getHeavenlyConnection();
+        //Connection connection = getHeavenlyConnection();
+        Connection connection = datasource.getConnection();
 
         // do some heavenly stuff
         Statement statement = null;
@@ -128,10 +252,10 @@ public class HeavenlyData
                 + "INNER JOIN constellation AS c ON s.IAU_con = c.IAU_abbreviation "
                 + "ORDER BY s.IAU_con, n.Name;\r\n";
 
-        ResultSet resultSet = getResultSet(query);
-
+        ResultSet resultSet = null;
         try
         {
+            resultSet = getResultSet(query);
             resultSet.beforeFirst();
             while (resultSet.next())
             {
@@ -163,8 +287,8 @@ public class HeavenlyData
      */
     private static Connection getHeavenlyConnection()
     {
-        String url = "jdbc:mysql://pegasus:3306/heavens";
-        //String url = "jdbc:mysql://localhost:3306/heavens";
+        //String url = "jdbc:mysql://pegasus.ping23.com:3306/heavens";
+        String url = "jdbc:mysql://localhost:3306/heavens";
         String username = "jls";
         String password = "twisted23";
 
@@ -180,6 +304,15 @@ public class HeavenlyData
         }
 
         return connection;
+    }
+
+    /**
+     * output the constellation name for the given IAU abbreviation
+     */
+    public static void outputConstellationName()
+    {
+        System.out
+            .println("Constellation name = " + getConstellationFullname("Cas"));
     }
 
 }

@@ -22,7 +22,8 @@ public class App
     private void go()
     {
         //HeavenlyData.printStarData();
-        HeavenlyData.doSomething();
+        //HeavenlyData.doSomething();
+        HeavenlyData.outputConstellationName();
     }
 
 }
